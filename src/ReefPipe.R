@@ -74,7 +74,7 @@ parser$add_argument('-l', '--trunclen', nargs=2, type='integer', metavar=c('Fwd'
 parser$add_argument('-n', '--max_ambiguous', type='integer', default=0, help='Specify the maximum number of ambiguous reads allowed. Default is 0.')
 parser$add_argument('-E', '--max_error_rates', nargs=2, type='numeric', metavar=c('Fwd', 'Rev'), default=c(2, 4), help='Specify the maximum error rates for forward and reverse reads. Default is 2 for forward reads and 4 for reverse reads.')
 parser$add_argument('-q', '--min_quality_score', type='integer', default=2, help='Specify the minimum quality score that each base should have. Default is 2.')
-parser$add_argument('-x', '--contaminants', action='store_false', help='Disable the removal of contaminant reads during filtering and trimming.')
+parser$add_argument('-x', '--contaminants', action='store_true', help='Disable the removal of contaminant reads from the PhiX genome during filtering and trimming.')
 parser$add_argument('-c', '--compress', action='store_false', help='Disable the compression of the output files.')
 
 # Command line arguments for merging pairs
@@ -695,7 +695,7 @@ for(iter in 1:length(paths)){
                        maxEE= max_error_rates,                 # Maximum error rates for F and R read
                        truncQ= min_quality_score,              # Minimum quality score that each base should have
                        minLen = minlen,                        # Minimum length of the reads after trimming
-                       rm.phix= contaminants,                  # Remove contaminant reads
+                       rm.phix= !contaminants,                 # Remove contaminant reads of the PhiX genome
                        compress= compress,                     # Output files are compressed
                        multithread = T)                        # On Windows set multithread = FALSE
   
