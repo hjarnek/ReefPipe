@@ -267,7 +267,7 @@ print_header(2)
   
   # Check if all reference databases contain the required taxonomic levels
   if(fuse){
-    source(file.path(dirname(pipeline_path), 'dependencies/taxLevelCheck.R'))
+    source(file.path(dirname(pipeline_path), 'lib/taxLevelCheck.R'))
   }
 
 
@@ -279,7 +279,7 @@ if(!is.null(download)){
   print_header(3)
   
   # Source the R-script
-  source(file.path(dirname(pipeline_path), 'dependencies/ENAFetcher.R'))
+  source(file.path(dirname(pipeline_path), 'lib/ENAFetcher.R'))
   
   run_mode = 'multi'  # Set run_mode to multi
 }
@@ -1039,7 +1039,7 @@ print_header(7)
   if(nrow(seqtab.nochim) > 1){
     
     # Execute ASV rarefaction script
-    source(file.path(dirname(pipeline_path), 'dependencies/Rarefaction.R'))
+    source(file.path(dirname(pipeline_path), 'lib/Rarefaction.R'))
   
     } else{
         cat('Rarefaction not possible due to the sequence table having only 1 row.\n')
@@ -1161,7 +1161,7 @@ if((reference == T | boldigger == T) & length(paths) > 0){
     cat('\n[Reference libraries]\n')
   
     # Execute taxonomic classification with DADA2
-    source(file.path(dirname(pipeline_path), 'dependencies/TaxonomicClassification.R'))
+    source(file.path(dirname(pipeline_path), 'lib/TaxonomicClassification.R'))
     
   }
 
@@ -1230,6 +1230,6 @@ if((reference == T | boldigger == T) & length(paths) > 0){
     cat('\n[Merging]\n\n')
       
       # Source the taxonomic table merging script
-      source(file.path(dirname(pipeline_path), 'dependencies/TaxTableMerger.R'))
+      source(file.path(dirname(pipeline_path), 'lib/TaxTableMerger.R'))
   }
 }
