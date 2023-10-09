@@ -201,39 +201,30 @@ print_header(2)
     bold <- FALSE
   }
   
-  # Check if BOLDSYSTEMS contains can be used for the gene of interest
-  if(bold & GOI == '18S'){
-    bold = F
-    cat('BOLDigger has been disabled.\n')
-  }
-  
-  # Check if the BOLDigger batch_size is between 1 and 50
-  if(bold & (batch_size < 1 | batch_size > 50)){
-    stop('The BOLD batch size must be between 0 and 50.') 
-  }
-  
-  # Check if connection to BOLDSYSTEMS is possible 
   if(bold){
-    
-    cat('[boldigger test] ')
-    dummy_sequence <- c('>ASV1',
-                    'GCTTGCAGGAAACATCGCTCATGCCGGACCATCCGTAGACATAGCAATTTTTAGTTTACACCTTGCAGGGGCCTCCTCAATTCTAGGAGCAGTTAACTTTATTTCAACTGTAATAAATATACGAAGAACAGGGTACCGGTTAGAACGAGTTCCTTTATTTGTTTGAGCCGTTAAAATTACAGCCGTCCTCCTTCTTTTATCTCTACCAGTACTAGCCGGAGCCATTACAATACTATTAACAGACCGAAACCTTAATACCTCTTTTTTTGATCCAGCAGGAGGGGGAGACCCTGTCCTATACCAACACCTTTTC')
-    
-    writeLines(dummy_sequence, con = file.path(mainpath, 'dummy.fas'))
-    
-    # Execute BOLDigger command line tool: find top 20 hits for dummy sequence
-    test <- system2(command = 'boldigger-cline', args = c('ie_coi', 
-                                                  paste0("\"", username, "\""), 
-                                                  paste0("\"", password, "\""), 
-                                                  paste0("\"", file.path(mainpath, 'dummy.fas'), "\""), 
-                                                  paste0("\"", mainpath, "\"")))
-    if(file.exists(file.path(mainpath, 'BOLDResults_dummy_part_1.xlsx'))){
-      unlink(x = c(file.path(mainpath, 'dummy_done.fas'), 
-                 file.path(mainpath, 'BOLDResults_dummy.h5.lz'), 
-                 file.path(mainpath, 'BOLDResults_dummy_part_1.xlsx')))
-    } else{
-      unlink(x = file.path(mainpath, 'dummy.fas'))
-      stop('Could not connect to BOLDSYSTEMS.')
+    if(GOI == '18S'){
+      bold = F
+      cat('BOLD has been disabled.\n')
+    } else {
+      
+      cat('Checking BOLD access... ')
+      
+      # Check if the BOLD batch_size is between 1 and 50
+      if(batch_size < 1 | batch_size > 50){
+        stop('The BOLD batch size must be between 0 and 50.') 
+      }
+      
+      # Check if connection to BOLDSYSTEMS is possible 
+      loginresult <- system2(command = 'python3', args = c(paste0("\"", file.path(dirname(pipeline_path), 'dependencies/BOLD_logincheck.py'), "\""), 
+                                                           '-u', username, 
+                                                           '-p', password),
+                             stdout = TRUE)
+      if('Login successful.' %in% loginresult){
+        cat('OK')
+      } else {
+        cat(loginresult)
+        stop('Could not connect to BOLDSYSTEMS.')
+      }
     }
   }
 
