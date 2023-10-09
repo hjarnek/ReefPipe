@@ -75,7 +75,7 @@ parser$add_argument('-n', '--max_ambiguous', type='integer', default=0, help='Sp
 parser$add_argument('-E', '--max_error_rates', nargs=2, type='numeric', metavar=c('Fwd', 'Rev'), default=c(2, 4), help='Specify the maximum error rates for forward and reverse reads. Default is 2 for forward reads and 4 for reverse reads.')
 parser$add_argument('-q', '--min_quality_score', type='integer', default=2, help='Specify the minimum quality score that each base should have. Default is 2.')
 parser$add_argument('-x', '--contaminants', action='store_true', help='Disable the removal of contaminant reads from the PhiX genome during filtering and trimming.')
-parser$add_argument('-c', '--compress', action='store_false', help='Disable the compression of the output files.')
+parser$add_argument('-u', '--uncompressed', action='store_true', help='Disable the compression of the output files (yields non-gzipped fastq files).')
 
 # Command line arguments for merging pairs
 parser$add_argument('-o', '--min_overlap', type='integer', default=10, help='Specify the minimum overlap length required for merging pairs. Default is 10.')
@@ -121,7 +121,7 @@ max_ambiguous <- args$max_ambiguous
 max_error_rates <- args$max_error_rates
 min_quality_score <- args$min_quality_score
 contaminants <- args$contaminants
-compress <- args$compress
+uncompressed <- args$uncompressed
 min_overlap <- args$min_overlap
 max_mismatch <- args$max_mismatch
 batch_size <- args$batch_size
@@ -414,7 +414,7 @@ print_header(4)
         paste0("max_error_rates:", max_error_rates),
         paste0("min_quality_score:", min_quality_score),
         paste0("contaminants:", contaminants),
-        paste0("compress:", compress),
+        paste0("uncompressed:", uncompressed),
         
         '\n\nMerging Read pairs\n------------------',
         paste0("min_overlap:", min_overlap),
@@ -696,7 +696,7 @@ for(iter in 1:length(paths)){
                        truncQ= min_quality_score,              # Minimum quality score that each base should have
                        minLen = minlen,                        # Minimum length of the reads after trimming
                        rm.phix= !contaminants,                 # Remove contaminant reads of the PhiX genome
-                       compress= compress,                     # Output files are compressed
+                       compress= !uncompressed,                # Output files are compressed
                        multithread = T)                        # On Windows set multithread = FALSE
   
   saveRDS(out, file.path(path.filt, 'Filtered_Trimmed_Logfile.rds'))
