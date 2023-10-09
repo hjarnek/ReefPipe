@@ -64,8 +64,7 @@ parser$add_argument('-r', '--run_mode', choices = c('single', 'multi'), required
 parser$add_argument('-g', '--gene', choices = c('COI', 'ITS', '18S'), required = TRUE, help = 'Specify the gene to analyze.')
 
 # Primer removal arguments
-parser$add_argument('-t', '--trim_primers', action = 'store_true', help = 'Enable primer trimming using cutadapt. By default, primers are not trimmed.')
-parser$add_argument('-p', '--primers', nargs=2, type='character', metavar=c('Fwd_Primer', 'Rev_Primer'), help='Specify the forward and reverse primer sequences for trimming with cutadapt.')
+parser$add_argument('-t', '--trim_primers', nargs=2, type='character', metavar=c('Fwd_Primer', 'Rev_Primer'), help='Enable primer trimming using cutadapt, specifying the forward and reverse primer sequences.')
 parser$add_argument('-e', '--error_rate', type='numeric', default = 0.1, help = 'Specify the maximum allowed error rate for cutadapt (if 0 <= E < 1) or the absolute number of errors for full-length adapter match (if E is an integer >= 1)')
 
 # Command line arguments for filtering and trimming
@@ -105,7 +104,6 @@ download <- args$download
 run_mode <- args$run_mode
 GOI <- args$gene
 trim_primers <- args$trim_primers
-primers <- args$primers
 cutadapt_error_rate <- args$error_rate
 minlen <- args$minlen
 trunclen <- args$trunclen
@@ -179,8 +177,14 @@ print_header(2)
   ## TRIMMING AND PRIMERS CHECK ##
   ################################
   
-  if(trim_primers & is.null(primers)){
-    stop('If --trim_primers is specified, --primers must also be specified.')
+  if(!is.null(trim_primers)) {
+    FWD <- trim_primers[1]
+    REV <- trim_primers[2]
+    trim_primers <- TRUE
+  } else {
+    FWD <- NULL
+    REV <- NULL
+    trim_primers <- FALSE
   }
 
   if(GOI %in% c('ITS', '18S')){
@@ -405,7 +409,8 @@ print_header(4)
         
         '\n\nPrimer Removal\n--------------',
         paste0("trim_primers:", trim_primers),
-        paste0("primers:", primers),
+        paste0("Fwd_Primer:", FWD),
+        paste0("Rev_Primer:", REV),
         
         '\n\nFiltering & Trimming\n--------------------',
         paste0("minlen:", minlen),
@@ -539,10 +544,6 @@ for(iter in 1:length(paths)){
     # Make files to store the prefiltered sequences
     FwdRead.cut <- file.path(path.cut, basename(FwdRead))
     RevRead.cut <- file.path(path.cut, basename(RevRead))
-    
-    # Define forward and reverse primer AND construct the cutadapt arguments
-    FWD <- primers[1] 
-    REV <- primers[2]
     
     # If the gene of interest is COI
     if(GOI == 'COI'){
