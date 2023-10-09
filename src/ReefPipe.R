@@ -558,7 +558,8 @@ for(iter in 1:length(paths)){
                                      '-e', cutadapt_error_rate,
                                      '--discard-untrimmed',                                                             # Discard reads that were not trimmed
                                      '-o', paste0("\"", FwdRead.cut[i], "\""), '-p', paste0("\"",RevRead.cut[i], "\""), # Output files
-                                     paste0("\"", FwdRead[i], "\""), paste0("\"", RevRead[i], "\"")))                   # Input files
+                                     paste0("\"", FwdRead[i], "\""), paste0("\"", RevRead[i], "\""),                    # Input files
+                                     '-j 0'))                                                                           # Number of cores to run on. 0 for auto-detect
       }
     }
     
@@ -579,7 +580,8 @@ for(iter in 1:length(paths)){
                                      '-e', cutadapt_error_rate,
                                      '--discard-untrimmed',                                                             # Discard reads that were not trimmed
                                      '-o', paste0("\"", FwdRead.cut[i], "\""), '-p', paste0("\"",RevRead.cut[i], "\""), # Output files
-                                     paste0("\"", FwdRead[i], "\""), paste0("\"", RevRead[i], "\"")))                   # Input files
+                                     paste0("\"", FwdRead[i], "\""), paste0("\"", RevRead[i], "\""),                    # Input files
+                                     '-j 0'))                                                                           # Number of cores to run on. 0 for auto-detect
       }
     }
   }
