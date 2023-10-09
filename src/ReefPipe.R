@@ -494,9 +494,9 @@ for(iter in 1:length(paths)){
   FwdRead <- sort(list.files(paths[iter], pattern="_1.fastq", full.names = TRUE))
   RevRead <- sort(list.files(paths[iter], pattern="_2.fastq", full.names = TRUE))
   
-  # Extract sample names 
-  sample.names <- sapply(strsplit(basename(FwdRead), "_"), `[`, 1)
-  sample.names.check <- sapply(strsplit(basename(RevRead), "_"), `[`, 1)
+  # Extract sample names
+  sample.names <- sapply(strsplit(basename(FwdRead), split = "_(?=[^_]*$)", perl = TRUE), `[`, 1)
+  sample.names.check <- sapply(strsplit(basename(RevRead), split = "_(?=[^_]*$)", perl = TRUE), `[`, 1)
   
   # Check if forward and reverse sample names match
   if (length(sample.names)!= length(sample.names.check)){
