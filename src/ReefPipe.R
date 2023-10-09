@@ -82,7 +82,7 @@ parser$add_argument('-o', '--min_overlap', type='integer', default=10, help='Spe
 parser$add_argument('-i', '--max_mismatch', type='integer', default=1, help='Specify the maximum number of mismatches allowed during merging. Default is 1.')
 
 # ASV fine-tuning
-parser$add_argument('-s', '--singleton', action = 'store_false', help = 'Keep singletons in the sequence table. By default, singletons are removed (except when only one sample is analyzed).')
+parser$add_argument('-s', '--singletons', action = 'store_true', help = 'Keep singletons in the sequence table. By default, singletons are removed (except when only one sample is analyzed).')
 
 # Command line arguments for taxonomic classification
 parser$add_argument('-B', '--BOLDigger', action = 'store_true', help = 'Perform taxonomic classification using BOLDigger.')
@@ -109,7 +109,7 @@ primers <- args$primers
 cutadapt_error_rate <- args$error_rate
 minlen <- args$minlen
 trunclen <- args$trunclen
-singleton <- args$singleton
+singletons <- args$singletons
 boldigger <- args$BOLDigger
 user <- args$user
 password <- args$password
@@ -421,7 +421,7 @@ print_header(4)
         paste0("max_mismatch:", max_mismatch),
         
         '\n\nASV Fine-Tuning\n---------------',
-        paste0("singleton:", singleton),
+        paste0("singletons:", singletons),
         
         '\n\nTaxonomic classification\n------------------------',
         paste0("boldigger:", boldigger),
@@ -967,7 +967,7 @@ print_header(6)
   ## Remove singletons ##
   #######################
   
-  if (singleton == T & dim(seqtab.nochim)[1] > 1){
+  if (singletons == F & dim(seqtab.nochim)[1] > 1){
     
     # Message
     step <- step + 1
