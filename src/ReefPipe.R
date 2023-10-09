@@ -84,9 +84,7 @@ parser$add_argument('-i', '--max_mismatch', type='integer', default=1, help='Spe
 parser$add_argument('-s', '--singletons', action = 'store_true', help = 'Keep singletons in the sequence table. By default, singletons are removed (except when only one sample is analyzed).')
 
 # Command line arguments for taxonomic classification
-parser$add_argument('-B', '--BOLDigger', action = 'store_true', help = 'Perform taxonomic classification using BOLDigger.')
-parser$add_argument('-U', '--user', type = 'character', required = FALSE, help = 'Specify the BOLDSYSTEMS user ID.')
-parser$add_argument('-P', '--password', type = 'character', required = FALSE, help = 'Specify the BOLDSYSTEMS password.')
+parser$add_argument('-B', '--BOLD', nargs=2, type='character', metavar=c('USERNAME', 'PASSWORD'), help = 'Perform taxonomic classification using BOLD. Specify BOLDsystems.org username and password.')
 parser$add_argument('-S', '--batch_size', type = 'numeric', required = FALSE, default = 50, help = 'Specify the BOLDigger batch size.')
 parser$add_argument('-R', '--reference', action = 'store_true', help = 'Perform taxonomic classification with DADA2 using custom reference databases.')
 parser$add_argument('-M', '--minBoot', type = 'numeric', default = 80, help = 'Specify the minimal bootstrap value for taxonomic classification with DADA2. Default is 80.')
@@ -108,9 +106,7 @@ cutadapt_error_rate <- args$error_rate
 minlen <- args$minlen
 trunclen <- args$trunclen
 singletons <- args$singletons
-boldigger <- args$BOLDigger
-user <- args$user
-password <- args$password
+bold <- args$BOLD
 reference <- args$reference
 minBoot <- args$minBoot
 fuse <- args$fuse
@@ -193,27 +189,31 @@ print_header(2)
   }
 
 
-  ######################
-  ## BOLDIGGER CHECKS ##
-  ######################
+  #################
+  ## BOLD CHECKS ##
+  #################
+  
+  if(!is.null(bold)) {
+    username <- bold[1]
+    password <- bold[2]
+    bold <- TRUE
+  } else {
+    bold <- FALSE
+  }
+  
   # Check if BOLDSYSTEMS contains can be used for the gene of interest
-  if(boldigger & GOI == '18S'){
-    boldigger = F
+  if(bold & GOI == '18S'){
+    bold = F
     cat('BOLDigger has been disabled.\n')
   }
   
-  # Check if BOLDigger username and password was provided
-  if(boldigger & (is.null(password) | is.null(user))){
-    stop('If --BOLDigger is specified, --user and --password also need to be specified.')
-  }
-
   # Check if the BOLDigger batch_size is between 1 and 50
-  if(boldigger & (batch_size < 1 | batch_size > 50)){
-    stop('The BOLDigger batch size must be between 0 and 50.') 
+  if(bold & (batch_size < 1 | batch_size > 50)){
+    stop('The BOLD batch size must be between 0 and 50.') 
   }
-
+  
   # Check if connection to BOLDSYSTEMS is possible 
-  if(boldigger){
+  if(bold){
     
     cat('[boldigger test] ')
     dummy_sequence <- c('>ASV1',
@@ -223,7 +223,7 @@ print_header(2)
     
     # Execute BOLDigger command line tool: find top 20 hits for dummy sequence
     test <- system2(command = 'boldigger-cline', args = c('ie_coi', 
-                                                  paste0("\"", user, "\""), 
+                                                  paste0("\"", username, "\""), 
                                                   paste0("\"", password, "\""), 
                                                   paste0("\"", file.path(mainpath, 'dummy.fas'), "\""), 
                                                   paste0("\"", mainpath, "\"")))
@@ -243,7 +243,7 @@ print_header(2)
   #########################
 
   # Check if fusing taxonomic tables is possible
-  if(boldigger & fuse & !reference){
+  if(bold & fuse & !reference){
     warning('You cannot merge taxonomic tables if only the BOLDSYSTEMS table is generated.')
     fuse = F    # Change fuse to false
   }
@@ -393,8 +393,9 @@ print_header(4)
       # Reconstruct the command
       command_arguments <- commandArgs(trailingOnly = T)
       
-      if(boldigger){
-        command_arguments[command_arguments %in% c(user, password)] <- "confidential"
+      if(bold){
+        command_arguments[command_arguments == username] <- "username_is_confidential"
+        command_arguments[command_arguments == password] <- "password_is_confidential"
       }
       
       command <- paste('Rscript ReefPipe.R', paste(command_arguments, collapse = ' '))
@@ -429,9 +430,7 @@ print_header(4)
         paste0("singletons:", singletons),
         
         '\n\nTaxonomic classification\n------------------------',
-        paste0("boldigger:", boldigger),
-        paste0("user:", 'confidential'),
-        paste0("password:", 'confidential'),
+        paste0("BOLD:", bold),
         paste0("reference:", reference),
         paste0("minBoot:", minBoot),
         
@@ -1011,7 +1010,7 @@ print_header(6)
   write(asv_fasta, file.path(path.asv_sequence, paste0(GOI, '_ASV.fasta')))
   saveRDS(seqtab.nochim, file.path(path.asv_sequence, 'seqtab.rds'))
   
-  if(boldigger){
+  if(bold){
     # Write second ASV multifasta file (-> For compatibility with Windows)
     write(asv_fasta, file.path(path.asv_sequence, paste0(GOI, '_ASV2.fasta')))
   }
@@ -1134,7 +1133,7 @@ print_header(7)
 ##############################
 
 # Check if taxonomic classification needs to be performed
-if((reference == T | boldigger == T) & length(paths) > 0){
+if((reference == T | bold == T) & length(paths) > 0){
   
   # Taxonomy message
   print_header(8)
@@ -1144,7 +1143,7 @@ if((reference == T | boldigger == T) & length(paths) > 0){
   path.ASV2 <- file.path(path.asv_sequence, paste0(GOI,'_ASV2.fasta'))       # 2 identical multifasta files are used.
   
   # Get paths to transformed ASV multifasta files (BOLDigger renames the used multifasta files to GOI_ASVS2_done.fasta)
-  boldigger.path.ASV <- file.path(path.asv_sequence, paste0(GOI, '_ASV2_done.fasta'))
+  bold.path.ASV <- file.path(path.asv_sequence, paste0(GOI, '_ASV2_done.fasta'))
   
   # Construct paths to directories where taxonomy files will be stored
   path.taxon <- file.path(path.result, '03.Taxonomy')
@@ -1169,11 +1168,11 @@ if((reference == T | boldigger == T) & length(paths) > 0){
   }
 
   
-  ##############################################
-  ## TAXONOMIC CLASSIFICATION WITH BOLDIGGER ##
-  #############################################
+  ########################################
+  ## TAXONOMIC CLASSIFICATION WITH BOLD ##
+  ########################################
   
-  if(boldigger == T){
+  if(bold == T){
     
     cat('\n[BOLDigger] ')
     
@@ -1185,7 +1184,7 @@ if((reference == T | boldigger == T) & length(paths) > 0){
     
     # Execute the BOLDigger command line tool: find top 20 hits
     system2(command = 'boldigger-cline', args = c(bold_argument, 
-                                                  paste0("\"", user, "\""), 
+                                                  paste0("\"", username, "\""), 
                                                   paste0("\"", password, "\""), 
                                                   paste0("\"", path.ASV2, "\""), 
                                                   paste0("\"", path.taxon, "\""),
@@ -1226,7 +1225,7 @@ if((reference == T | boldigger == T) & length(paths) > 0){
     for(non_dir in non_dirs){unlink(x = non_dir)}
     
     # Remove the duplicate multifasta file with ASV sequences
-    unlink(x = boldigger.path.ASV)
+    unlink(x = bold.path.ASV)
   }
   
   if(fuse){
