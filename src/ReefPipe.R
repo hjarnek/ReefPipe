@@ -244,25 +244,66 @@ print_header(2)
   ## REFERENCE DATABASE CHECKS ##
   ###############################
   
-  # Check if reference databases and config file exist when --reference is selected
   if(reference){
     
     ref_files <- list.files(path = file.path(dirname(dirname(pipeline_path)), 'reference'), full.names = T)  # Get list of all references
     config_file <- ref_files[basename(ref_files) == 'config.txt']                                            # Get the configuration file
     ref_files <- ref_files[ref_files != config_file]                                                         # Remove configuration file from reference list
     
+    # Check if reference databases and config file exist when --reference is selected
     if(!file.exists(config_file)){
-      stop(paste("The file", config_file, "does not exist, which is necessary for the process of taxonomic classification using locally stored reference databases. It appears that the file may have been (re)moved or is missing from its expected location."))
+      stop(paste("The file", config_file,
+                 "does not exist, which is necessary for the process of taxonomic classification using locally stored reference databases. It appears that the file may have been (re)moved or is missing from its expected location."))
     }
-    
     if(length(ref_files) == 0){
       stop('The reference database folder is empty. Please make sure there are reference databases available in the directory.')
     }
-  }
-  
-  # Check if all reference databases contain the required taxonomic levels
-  if(fuse){
-    source(file.path(dirname(pipeline_path), 'taxLevelCheck.R'))
+    
+    config_df <- read.csv(config_file)                                                                            # Read in the configuration file
+    config_refs <- config_df[,'Database']                                                                         # Get the database names
+    
+    # Loop over every database in the reference directory
+    for(ref_file in ref_files){
+      
+      # Check if the names of the reference databases match with those in the config file
+      if(!basename(ref_file) %in% config_refs){
+        stop(paste('The reference database config file is missing information or contains a typo related to the file', basename(ref_file), '. Please review the config file and try again.'))
+      } 
+      
+      # Check if the names of the reference databases occur only once in the config file
+      else if(sum(grepl(pattern = basename(ref_file), x = config_refs)) > 1){
+        stop(paste('The reference database config file has multiple entries for the', basename(ref_file), 'database. Please review the config file and try again.'))
+      }
+    }
+    
+    #########################
+    ## TABLE FUSION CHECKS ##
+    #########################
+    
+    # Check if --fuseLevels is valid
+    if(fuse){
+      
+      # Extract the individual levels from --fuseLevels
+      individual_levels <- gsub(' ', '', str_to_title(strsplit(fuseLevels, ",")[[1]]))
+      
+      for(i in 1:nrow(config_df)){
+        
+        # Extract the taxonomic levels per reference database from config_df and convert them to 1 string
+        ref_levels <- gsub('[\t ]', '', str_to_title(strsplit(config_df[i, "TaxonomicLevel"], ";")[[1]]))
+        
+        for(individual_level in individual_levels){
+          if(!individual_level %in% ref_levels){
+            stop(paste('Invalid taxonomic levels for --f argument: The level of', 
+                       individual_level, 
+                       'cannot be used for merging taxonomic tables as it is not present in all reference databases.'))
+          }
+        }
+      }
+    }
+  # Check if fusing taxonomic tables is possible
+  } else if((bold == T) & (fuse == T)){
+    warning('You cannot merge taxonomic tables if only the BOLDSYSTEMS table is generated.')
+    fuse = F    # Change fuse to false
   }
 
 
@@ -1031,12 +1072,42 @@ print_header(7)
   
   if(nrow(seqtab.nochim) > 1){
     
-    # Execute ASV rarefaction script
-    source(file.path(dirname(pipeline_path), 'Rarefaction.R'))
-  
-    } else{
-        cat('Rarefaction not possible due to the sequence table having only 1 row.\n')
-    }
+    # Make the rarefaction plot
+    suppressWarnings({
+      # Remove rows where the sum of the observed count data across entire row is smaller than 2 
+      seqtab.nochim <- seqtab.nochim[!rowSums(seqtab.nochim) <= 1,]
+      
+      S <- specnumber(seqtab.nochim) # observed number of ASV sequences, same as apply(seqtab.nochim, 1, function(x){sum(x != 0)})
+      
+      (raremax <- min(rowSums(seqtab.nochim))) # rarefaction threshold
+      
+      # The rarefy() function is used to estimate the expected number of species 
+      # (or ASV sequences) in random subsamples of a specified size from a community 
+      # or dataset. It is a common method for comparing species richness or diversity 
+      # across different samples or communities. In the line below, rarefy(seqtab.nochim, raremax) 
+      # calculates the rarefied species richness by simulating the expected number of 
+      # species in random subsamples of size raremax from the seqtab.nochim dataset. 
+      # The result is assigned to the variable Srare. The rarefaction process involves 
+      # randomly selecting a subset of individuals (or ASV sequences) from the dataset 
+      # without replacement, and then calculating the number of unique species (or ASV 
+      # sequences) present in each subsample. This process is repeated multiple times 
+      # to estimate the expected species richness for each subsample size.
+      
+      Srare <- rarefy(seqtab.nochim, raremax) # rarefy the data
+      
+      pdf(file = file.path(path.asv_plot, 'ASVRarefaction.pdf')) ## Write to pdf
+      
+      plot(S, Srare, xlab = "Observed No. of ASVs", ylab = "Rarefied No. of ASVs")
+      abline(0, 1) # reference line
+      
+      rarecurve(seqtab.nochim, step = 20, sample = raremax, col = "blue", cex = 0.6, ylab = 'ASVs') # rarefaction curve
+      
+      dev.off()
+    })
+    
+  } else{
+    cat('Rarefaction not possible due to the sequence table having only 1 row.\n')
+  }
   
   
   ##################################
@@ -1150,12 +1221,39 @@ if((reference == T | bold == T) & length(paths) > 0){
   ## TAXONOMIC CLASSIFICATION WITH LOCAL REFERENCE DATABASES ##
   #############################################################
   
-  if(reference == T){
-    cat('\n[Reference libraries]\n')
-  
-    # Execute taxonomic classification with DADA2
-    source(file.path(dirname(pipeline_path), 'TaxonomicClassification.R'))
+  if(reference){
     
+    cat('\n[Reference libraries]\n')
+    
+    # Read in the input multifasta file
+    seqs <- readDNAStringSet(path.ASV)
+    IDs <- names(seqs)
+    
+    # Loop through each reference database file
+    for (ref_file in ref_files) {
+      
+      # Get the reference database base and name
+      ref_base <- basename(ref_file)
+      ref_name <- (basename(fs::path_ext_remove(ref_file)))
+      
+      # Extract the taxonomic levels per reference database from config_df
+      ref_levels <- gsub(' ', '', str_to_title(strsplit(config_df[config_df$Database == ref_base, "TaxonomicLevel"], ";")[[1]]))
+      
+      cat(paste('Reference database:', ref_name, '\n'))
+      
+      if(!dir.exists(file.path(path.taxon, ref_name))){
+        cat(paste('Creating output directories:', file.path(path.taxon, ref_name), '\n'))
+        dir.create(file.path(path.taxon, ref_name))
+      }
+      
+      # Create the taxonomy table using the DADA2 assignTaxonomy function
+      tax_table <- assignTaxonomy(seqs, ref_file, outputBootstraps = TRUE, taxLevels = ref_levels, minBoot = minBoot, multithread = T)
+      tax_table <- cbind(ID = IDs, tax_table)
+      
+      # Print the taxonomy table to an Excel file
+      library(openxlsx)
+      write.xlsx(x = as.data.frame(tax_table), file = file.path(path.taxon, ref_name, paste0(ref_name,'_tax_classification', '.xlsx')), asTable = T, sheetName = 'Taxonomy')
+    }
   }
 
   
