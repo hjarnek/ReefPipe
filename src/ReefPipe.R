@@ -17,14 +17,12 @@ cat(' ____  _____ _____ _____ ____ ___ ____  _____
 
 # Print header
 print_header <- function(number){
-  headers <- c("\n _ _ _     \n| (_) |__  \n| | | \'_ \\ \n| | | |_) |\n|_|_|_.__/ \n\nInstalling and loading all packages\n",
-                "\n                    _ \n                   | |\n  ___ _ __ ___   __| |\n / __| '_ ` _ \\ / _` |\n| (__| | | | | | (_| |\n \\___|_| |_| |_|\\__,_|\n\nChecking command line parameters\n",
-                "\n  ___ _ __   __ _ \n / _ \\ \'_ \\ / _` |\n|  __/ | | | (_| |\n \\___|_| |_|\\__,_|\n\nFetching fastq files from ENA\n\n",
-               "\n                _        \n               | |       \n _ __ ___   ___| |_ __ _ \n| '_ ` _ \\ / _ \\ __/ _` |\n| | | | | |  __/ || (_| |\n|_| |_| |_|\\___|\\__\\__,_|\n\nChecking metabarcoding data\n",
-                "\n  __ _ _____   __\n / _` / __\\ \\ / /\n| (_| \\__ \\\\ V / \n \\__,_|___/ \\_/  \n",
-                "\n      _ _           \n     | (_)          \n  ___| |_ _ __ ___  \n / _ \\ | | '_ ` _ \\ \n|  __/ | | | | | | |\n \\___|_|_|_| |_| |_|\n\n",
-                "\n       _       _   \n      | |     | |  \n _ __ | | ___ | |_ \n| '_ \\| |/ _ \\| __|\n| |_) | | (_) | |_ \n| .__/|_|\\___/ \\__|\n| |                \n|_|                \n\n",
-                " _             \n| |_ __ ___  __\n| __/ _` \\ \\/ /\n| || (_| |>  < \n \\__\\__,_/_/\\_\\\n\n")
+  headers <- c("\n _ _ _     \n| (_) |__  \n| | | \'_ \\ \n| | | |_) |\n|_|_|_.__/ \n\nInstalling and loading all packages\n\n",                                                      # lib
+               " _ __  _ __ ___ _ __\n| \'_ \\| \'__/ _ \\ \'_ \\\n| |_) | | |  __/ |_) |\n| .__/|_|  \\___| .__/\n| |            | |\n|_|            |_|\n\nSetup & checks\n\n",     # prep
+               "\n  __ _ _____   __\n / _` / __\\ \\ / /\n| (_| \\__ \\\\ V / \n \\__,_|___/ \\_/  \n",                                                                               # asv
+               "\n      _ _           \n     | (_)          \n  ___| |_ _ __ ___  \n / _ \\ | | '_ ` _ \\ \n|  __/ | | | | | | |\n \\___|_|_|_| |_| |_|\n\n",                         # elim
+               "\n       _       _   \n      | |     | |  \n _ __ | | ___ | |_ \n| '_ \\| |/ _ \\| __|\n| |_) | | (_) | |_ \n| .__/|_|\\___/ \\__|\n| |                \n|_|\n\n",    # plot
+               " _             \n| |_ __ ___  __\n| __/ _` \\ \\/ /\n| || (_| |>  < \n \\__\\__,_/_/\\_\\\n\n")                                                                       # tax
   
   cat(headers[number])
 }
@@ -85,9 +83,9 @@ parser$add_argument('-s', '--singletons', action = 'store_true', help = 'Keep si
 
 # Command line arguments for taxonomic classification
 parser$add_argument('-B', '--BOLD', nargs=2, type='character', metavar=c('USERNAME', 'PASSWORD'), help = 'Perform taxonomic classification using BOLD. Specify BOLDsystems.org username and password.')
-parser$add_argument('-S', '--batch_size', type = 'numeric', required = FALSE, default = 50, help = 'Specify the BOLDigger batch size.')
-parser$add_argument('-R', '--reference', action = 'store_true', help = 'Perform taxonomic classification with DADA2 using custom reference databases.')
-parser$add_argument('-M', '--minBoot', type = 'numeric', default = 80, help = 'Specify the minimal bootstrap value for taxonomic classification with DADA2. Default is 80.')
+parser$add_argument('-S', '--batch_size', type = 'numeric', required = FALSE, default = 50, help = 'Specify the BOLD batch size.')
+parser$add_argument('-R', '--reference', action = 'store_true', help = 'Perform taxonomic classification with RDPclassifier using custom reference databases.')
+parser$add_argument('-M', '--minBoot', type = 'numeric', default = 80, help = 'Specify the minimal bootstrap value for taxonomic classification with RDPclassifier. Default is 80.')
 
 # Command line arguments for taxonomic table fusing
 parser$add_argument('-F', '--fuse', action = 'store_true', help = 'Fuse the information from all taxonomic tables.')
@@ -121,16 +119,6 @@ max_mismatch <- args$max_mismatch
 batch_size <- args$batch_size
 
 
-#################
-## R PACKAGES ##
-################
-
-print_header(1)
-
-# Install and load
-install_and_load_packages(c('BiocManager','openxlsx','dada2','ggplot2','stats', 'Biostrings','ShortRead','vegan','readxl','stringr','purrr','dplyr','gtools','gplots','tidyr'))
-
-
 ########################
 ## MAIN PIPELINE PATH ##
 ########################
@@ -151,12 +139,23 @@ if (!is.null(pipeline_path)) {
 }
 
 
+#################
+## R PACKAGES ##
+################
+
+print_header(1)
+
+# Install and load
+install_and_load_packages(c('BiocManager','openxlsx','dada2','ggplot2','stats', 'Biostrings','ShortRead','vegan','readxl','stringr','purrr','dplyr','gtools','gplots','tidyr'))
+
+
 ########################################
 ## COMMAND LINE CONDITIONS AND CHECKS ##
 ########################################
 
 print_header(2)
-  
+cat('Checking command parameters... ')
+
   ##########################
   ## BASE DIRECTORY CHECK ##
   ##########################
@@ -167,8 +166,7 @@ print_header(2)
   } else if(!file_info$isdir){
     stop(paste(mainpath, 'is not a directory.'))
   }
-
-
+  
   ################################
   ## TRIMMING AND PRIMERS CHECK ##
   ################################
@@ -187,59 +185,7 @@ print_header(2)
     trunclen = 0
     cat('trunclen has been disabled.\n')
   }
-
-
-  #################
-  ## BOLD CHECKS ##
-  #################
-  
-  if(!is.null(bold)) {
-    username <- bold[1]
-    password <- bold[2]
-    bold <- TRUE
-  } else {
-    bold <- FALSE
-  }
-  
-  if(bold){
-    if(GOI == '18S'){
-      bold = F
-      cat('BOLD has been disabled.\n')
-    } else {
-      
-      cat('Checking BOLD access... ')
-      
-      # Check if the BOLD batch_size is between 1 and 50
-      if(batch_size < 1 | batch_size > 50){
-        stop('The BOLD batch size must be between 0 and 50.') 
-      }
-      
-      # Check if connection to BOLDSYSTEMS is possible 
-      loginresult <- system2(command = 'python3', args = c(paste0("\"", file.path(dirname(pipeline_path), 'BOLD_logincheck.py'), "\""), 
-                                                           '-u', username, 
-                                                           '-p', password),
-                             stdout = TRUE)
-      if('Login successful.' %in% loginresult){
-        cat('OK')
-      } else {
-        cat(loginresult)
-        stop('Could not connect to BOLDSYSTEMS.')
-      }
-    }
-  }
-
-
-  #########################
-  ## TABLE FUSION CHECKS ##
-  #########################
-
-  # Check if fusing taxonomic tables is possible
-  if(bold & fuse & !reference){
-    warning('You cannot merge taxonomic tables if only the BOLDSYSTEMS table is generated.')
-    fuse = F    # Change fuse to false
-  }
-
-
+    
   ###############################
   ## REFERENCE DATABASE CHECKS ##
   ###############################
@@ -305,6 +251,47 @@ print_header(2)
     warning('You cannot merge taxonomic tables if only the BOLDSYSTEMS table is generated.')
     fuse = F    # Change fuse to false
   }
+  
+  cat('OK\n')
+  
+  #################
+  ## BOLD CHECKS ##
+  #################
+  
+  if(!is.null(bold)) {
+    username <- bold[1]
+    password <- bold[2]
+    bold <- TRUE
+  } else {
+    bold <- FALSE
+  }
+  
+  if(bold){
+    if(GOI == '18S'){
+      bold = F
+      cat('BOLD has been disabled.\n')
+    } else {
+      
+      cat('Checking BOLD access... ')
+      
+      # Check if the BOLD batch_size is between 1 and 50
+      if(batch_size < 1 | batch_size > 50){
+        stop('The BOLD batch size must be between 0 and 50.') 
+      }
+      
+      # Check if connection to BOLDSYSTEMS is possible 
+      loginresult <- system2(command = 'python3', args = c(paste0("\"", file.path(dirname(pipeline_path), 'dependencies/BOLD_logincheck.py'), "\""), 
+                                                           '-u', username, 
+                                                           '-p', password),
+                             stdout = TRUE)
+      if('Login successful.' %in% loginresult){
+        cat('OK')
+      } else {
+        cat(loginresult)
+        stop('Could not connect to BOLDSYSTEMS.')
+      }
+    }
+  }
 
 
 #############################
@@ -312,10 +299,13 @@ print_header(2)
 #############################
 
 if(!is.null(download)){
-  print_header(3)
+  
+  cat('\n\nFetching fastq files from ENA\n')
   
   # Source the R-script
-  source(file.path(dirname(pipeline_path), 'ENAFetcher.R'))
+  source(file.path(dirname(pipeline_path), 'dependencies/ENAfetch.R'))
+  
+  ENAfetch(download)
   
   run_mode = 'multi'  # Set run_mode to multi
 }
@@ -325,8 +315,7 @@ if(!is.null(download)){
 ## METABARCODE DATA BASE FOLDER CHECKS ##
 #########################################
 
-print_header(4)
-  
+cat('\nChecking metabarcoding data...')
 
   ###############################
   ## LOCATE METABARCODING DATA ##
@@ -386,7 +375,6 @@ print_header(4)
                    "\n       If the metabarcoding data is in a subfolder of the base directory, use '-r multi' instead of '-r single' for single sequencing run analysis.\n"))
       }
     }
-
 
 ##################
 ## TRIAL FOLDER ##
@@ -477,7 +465,6 @@ print_header(4)
     }
   }
   
-
   ###############################################
   ## LOCATE METABARCODING DATA IN TRIAL FOLDER ##
   ###############################################
@@ -487,13 +474,14 @@ print_header(4)
   } else if(run_mode == 'multi'){
     paths = normalizePath(list.dirs(path = trialpath, full.names = TRUE, recursive = FALSE), winslash = '/')
   }
-
+  
+  cat(' OK\n\n')
 
 #############################################
 ## ASV GENERATION FOR EVERY SEQUENCING RUN ##
 #############################################
 
-print_header(5)
+print_header(3)
 
 # Construct comprehensive sequence table
 main.seqtab <- NULL
@@ -536,15 +524,10 @@ for(iter in 1:length(paths)){
   
   # Check if forward and reverse sample names match
   if (length(sample.names)!= length(sample.names.check)){
-    
     stop('Amount of forward and reverse files do not match!')
-    
   } else {
-    
     for (i in 1:length(sample.names)){
-      
       if(sample.names[i] != sample.names.check[i]){
-        
         stop(paste0('The forward read file of ', 
                     sample.names[i], 
                     ' matched with the reverse read file of ', 
@@ -976,7 +959,7 @@ saveRDS(main.seqtab, file.path(path.asv_sequence, 'seqtab.rds'))
 ## PROCESSING ASVs ##
 #####################
 
-print_header(6)
+print_header(4)
 
   #####################
   ## REMOVE CHIMERAS ##
@@ -1052,7 +1035,7 @@ print_header(6)
 ## ASV FIGURES ##
 #################
 
-print_header(7)
+print_header(5)
   
   #####################
   ## ASV RAREFACTION ##
@@ -1106,7 +1089,7 @@ print_header(7)
     })
     
   } else{
-    cat('Rarefaction not possible due to the sequence table having only 1 row.\n')
+      cat('Rarefaction not possible due to the sequence table having only 1 row.\n')
   }
   
   
@@ -1198,7 +1181,7 @@ print_header(7)
 if((reference == T | bold == T) & length(paths) > 0){
   
   # Taxonomy message
-  print_header(8)
+  print_header(6)
   
   # Get paths to ASV multifasta files
   path.ASV <- file.path(path.asv_sequence, paste0(GOI, '_ASV.fasta'))        # To avoid potential errors in Windows, 
@@ -1261,9 +1244,9 @@ if((reference == T | bold == T) & length(paths) > 0){
   ## TAXONOMIC CLASSIFICATION WITH BOLD ##
   ########################################
   
-  if(bold == T){
+  if(bold){
     
-    cat('\n[BOLDigger] ')
+    cat('\n[BOLD] ')
     
     # Specify the GOI BOLDigger command line argument
     if(GOI == 'COI'){
