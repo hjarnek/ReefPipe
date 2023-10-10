@@ -215,7 +215,7 @@ print_header(2)
       }
       
       # Check if connection to BOLDSYSTEMS is possible 
-      loginresult <- system2(command = 'python3', args = c(paste0("\"", file.path(dirname(pipeline_path), 'dependencies/BOLD_logincheck.py'), "\""), 
+      loginresult <- system2(command = 'python3', args = c(paste0("\"", file.path(dirname(pipeline_path), 'BOLD_logincheck.py'), "\""), 
                                                            '-u', username, 
                                                            '-p', password),
                              stdout = TRUE)
@@ -246,14 +246,14 @@ print_header(2)
   
   # Check if reference databases and config file exist when --reference is selected
   if(reference){
-    ref_files <- list.files(path = file.path(dirname(pipeline_path), '../../data/reference/'), full.names = T)  # Get list of all references
-    config_file <- file.path(dirname(pipeline_path), '../../data/reference/config.txt')                         # Get the configuration file
+    
+    ref_files <- list.files(path = file.path(dirname(dirname(pipeline_path)), 'reference'), full.names = T)  # Get list of all references
+    config_file <- ref_files[basename(ref_files) == 'config.txt']                                            # Get the configuration file
+    ref_files <- ref_files[ref_files != config_file]                                                         # Remove configuration file from reference list
     
     if(!file.exists(config_file)){
       stop(paste("The file", config_file, "does not exist, which is necessary for the process of taxonomic classification using locally stored reference databases. It appears that the file may have been (re)moved or is missing from its expected location."))
     }
-    
-    ref_files <- ref_files[!basename(ref_files) == 'config.txt']                                                # Remove configuration file from references
     
     if(length(ref_files) == 0){
       stop('The reference database folder is empty. Please make sure there are reference databases available in the directory.')
@@ -262,7 +262,7 @@ print_header(2)
   
   # Check if all reference databases contain the required taxonomic levels
   if(fuse){
-    source(file.path(dirname(pipeline_path), 'lib/taxLevelCheck.R'))
+    source(file.path(dirname(pipeline_path), 'taxLevelCheck.R'))
   }
 
 
@@ -274,7 +274,7 @@ if(!is.null(download)){
   print_header(3)
   
   # Source the R-script
-  source(file.path(dirname(pipeline_path), 'lib/ENAFetcher.R'))
+  source(file.path(dirname(pipeline_path), 'ENAFetcher.R'))
   
   run_mode = 'multi'  # Set run_mode to multi
 }
@@ -1032,7 +1032,7 @@ print_header(7)
   if(nrow(seqtab.nochim) > 1){
     
     # Execute ASV rarefaction script
-    source(file.path(dirname(pipeline_path), 'lib/Rarefaction.R'))
+    source(file.path(dirname(pipeline_path), 'Rarefaction.R'))
   
     } else{
         cat('Rarefaction not possible due to the sequence table having only 1 row.\n')
@@ -1154,7 +1154,7 @@ if((reference == T | bold == T) & length(paths) > 0){
     cat('\n[Reference libraries]\n')
   
     # Execute taxonomic classification with DADA2
-    source(file.path(dirname(pipeline_path), 'lib/TaxonomicClassification.R'))
+    source(file.path(dirname(pipeline_path), 'TaxonomicClassification.R'))
     
   }
 
@@ -1223,6 +1223,6 @@ if((reference == T | bold == T) & length(paths) > 0){
     cat('\n[Merging]\n\n')
       
       # Source the taxonomic table merging script
-      source(file.path(dirname(pipeline_path), 'lib/TaxTableMerger.R'))
+      source(file.path(dirname(pipeline_path), 'TaxTableMerger.R'))
   }
 }
