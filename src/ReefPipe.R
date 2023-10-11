@@ -74,7 +74,8 @@ parser$add_argument('-q', '--min_quality_score', type='integer', default=2, help
 parser$add_argument('-x', '--contaminants', action='store_true', help='Disable the removal of contaminant reads from the PhiX genome during filtering and trimming.')
 parser$add_argument('-u', '--uncompressed', action='store_true', help='Disable the compression of the output files (yields non-gzipped fastq files).')
 
-# Command line arguments for merging pairs
+# Command line arguments for sample inference
+parser$add_argument('-N', '--nbases', type='integer', default=1e+08, help='The minimum number of total bases to use for error rate learning during sample inference.')
 parser$add_argument('-o', '--min_overlap', type='integer', default=10, help='Specify the minimum overlap length required for merging pairs. Default is 10.')
 parser$add_argument('-i', '--max_mismatch', type='integer', default=1, help='Specify the maximum number of mismatches allowed during merging. Default is 1.')
 
@@ -114,6 +115,7 @@ max_error_rates <- args$max_error_rates
 min_quality_score <- args$min_quality_score
 contaminants <- args$contaminants
 uncompressed <- args$uncompressed
+nbases <- args$nbases
 min_overlap <- args$min_overlap
 max_mismatch <- args$max_mismatch
 batch_size <- args$batch_size
@@ -784,8 +786,8 @@ for(iter in 1:length(paths)){
   # Learn the error rates
   set.seed(100)
   
-  errF <- learnErrors(FwdRead.filt, multithread=TRUE)
-  errR <- learnErrors(RevRead.filt, multithread=TRUE)
+  errF <- learnErrors(FwdRead.filt, nbases = nbases, multithread=TRUE)
+  errR <- learnErrors(RevRead.filt, nbases = nbases, multithread=TRUE)
   
   # Construct and store the error plots
   suppressWarnings({
