@@ -62,7 +62,8 @@ parser$add_argument('-r', '--run_mode', choices = c('single', 'multi'), required
 parser$add_argument('-g', '--gene', choices = c('COI', 'ITS', '18S'), required = TRUE, help = 'Specify the gene to analyze.')
 
 # Primer removal arguments
-parser$add_argument('-t', '--trim_primers', nargs=2, type='character', metavar=c('Fwd_Primer', 'Rev_Primer'), help='Enable primer trimming using cutadapt, specifying the forward and reverse primer sequences.')
+parser$add_argument('-t', '--trim_primers', action = 'store_true', help = 'Enable primer trimming using cutadapt. By default, primers are not trimmed.')
+parser$add_argument('-p', '--primers', nargs=2, type='character', metavar=c('Fwd_Primer', 'Rev_Primer'), help='Specify the forward and reverse primer sequences for trimming with cutadapt.')
 parser$add_argument('-e', '--error_rate', type='numeric', default = 0.1, help = 'Specify the maximum allowed error rate for cutadapt (if 0 <= E < 1) or the absolute number of errors for full-length adapter match (if E is an integer >= 1)')
 
 # Command line arguments for filtering and trimming
@@ -101,6 +102,7 @@ download <- args$download
 run_mode <- args$run_mode
 GOI <- args$gene
 trim_primers <- args$trim_primers
+primers <- args$primers
 cutadapt_error_rate <- args$error_rate
 minlen <- args$minlen
 trunclen <- args$trunclen
@@ -173,14 +175,30 @@ cat('Checking command parameters... ')
   ## TRIMMING AND PRIMERS CHECK ##
   ################################
   
-  if(!is.null(trim_primers)) {
-    FWD <- trim_primers[1]
-    REV <- trim_primers[2]
-    trim_primers <- TRUE
+  if(trim_primers) {
+    
+    # Define forward and reverse primer sequences
+    if(!is.null(primers)) {
+      FWD <- primers[1] 
+      REV <- primers[2]
+    } else {
+      default_primers <- read.csv2(file.path(dirname(dirname(pipeline_path)), 'default_primers.csv'))
+      FWD <- default_primers[which(default_primers[,"Region_name"] == GOI), "Fwd_primer"]
+      REV <- default_primers[which(default_primers[,"Region_name"] == GOI), "Rev_primer"]
+    }
+    
+    # Check that primer sequences only contain valid characters
+    primercheck <- c(grepl("^[ACGTUWSMKRYBDHVNacgtuwsmkrybdhvn]+$", FWD), grepl("^[ACGTUWSMKRYBDHVNacgtuwsmkrybdhvn]+$", REV))
+    if(primercheck[1] == F & primercheck[2] == F) {
+      stop(paste0('Both forward and reverse primers contain invalid characters. If no primers were specified, check the primers given in the default_primers.csv file, and that the corresponding Region_name agrees with the specified gene of interest (currently \"', GOI, '\")'))
+    } else if(primercheck[1] == F & primercheck[2] == T) {
+      stop(paste0('Forward primer contains invalid characters. If no primers were specified, check the primers given in the default_primers.csv file, and that the corresponding Region_name agrees with the specified gene of interest (currently \"', GOI, '\")'))
+    } else if(primercheck[1] == T & primercheck[2] == F) {
+      stop(paste0('Reverse primer contains invalid characters. If no primers were specified, check the primers given in the default_primers.csv file, and that the corresponding Region_name agrees with the specified gene of interest (currently \"', GOI, '\")'))
+    }
   } else {
-    FWD <- NULL
-    REV <- NULL
-    trim_primers <- FALSE
+    FWD <- character()
+    REV <- character()
   }
 
   if(GOI %in% c('ITS', '18S')){
