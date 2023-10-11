@@ -462,7 +462,8 @@ cat('\nChecking metabarcoding data...')
         paste0("contaminants:", contaminants),
         paste0("uncompressed:", uncompressed),
         
-        '\n\nMerging Read pairs\n------------------',
+        '\n\nSample inference\n------------------',
+        paste0("nbases:", nbases),
         paste0("min_overlap:", min_overlap),
         paste0("max_mismatch:", max_mismatch),
         
