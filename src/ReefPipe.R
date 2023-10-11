@@ -280,7 +280,7 @@ cat('Checking command parameters... ')
       }
       
       # Check if connection to BOLDSYSTEMS is possible 
-      loginresult <- system2(command = 'python3', args = c(paste0("\"", file.path(dirname(pipeline_path), 'dependencies/BOLD_logincheck.py'), "\""), 
+      loginresult <- system2(command = 'python3', args = c(paste0("\"", file.path(dirname(pipeline_path), 'BOLD_logincheck.py'), "\""), 
                                                            '-u', username, 
                                                            '-p', password),
                              stdout = TRUE)
@@ -303,9 +303,9 @@ if(!is.null(download)){
   cat('\n\nFetching fastq files from ENA\n')
   
   # Source the R-script
-  source(file.path(dirname(pipeline_path), 'dependencies/ENAfetch.R'))
+  source(file.path(dirname(pipeline_path), 'ENAdownload.R'))
   
-  ENAfetch(download)
+  ENAdownload(download)
   
   run_mode = 'multi'  # Set run_mode to multi
 }
