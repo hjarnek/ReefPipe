@@ -300,7 +300,7 @@ cat('Checking command parameters... ')
       }
       
       # Check if connection to BOLDSYSTEMS is possible 
-      loginresult <- system2(command = 'python3', args = c(paste0("\"", file.path(dirname(pipeline_path), 'BOLD_logincheck.py'), "\""), 
+      loginresult <- system2(command = 'python', args = c(paste0("\"", file.path(dirname(pipeline_path), 'BOLD_logincheck.py'), "\""), 
                                                            '-u', username, 
                                                            '-p', password),
                              stdout = TRUE)

@@ -12,7 +12,27 @@ Make sure you have R version 4.1.3 or higher installed on your system. If you do
 
 ### Python Software
 
-Make sure you have Python version 3.7 or higher installed on your system. If you don't have it already, you can download and install it from the [official Python website](https://www.python.org/).
+Make sure you have Python version 3.7 or higher installed on your system, by running
+```bash
+python --version
+```
+If you don't have Python installed already, you can download and install it from the [official Python website](https://www.python.org/).
+
+If you are on a UNIX system and get an error similar to
+```
+Command ‘python’ not found, did you mean:
+command ‘python3’ from python3
+command ‘python’ from python-is-python3
+```
+you can add 'python' as an alias for 'python3' – on GNU/Linux by running
+```bash
+echo "alias python='python3'" >> ~/.bashrc
+```
+or if you're on Mac by running
+```bash
+echo "alias python='python3'" >> ~/.bash_profile
+```
+and then restart your terminal.
 
 ### R Packages
 
